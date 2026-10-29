@@ -28,7 +28,7 @@
       isolation: isolate;
     }
 
-    .stage img {
+    .stage > img {
       position: absolute;
       z-index: 0;
       top: 50%;
@@ -37,7 +37,7 @@
       width: 60%;
     }
 
-    .stage svg {
+    .stage > svg {
       position: relative;
       z-index: 1;
       display: block;
@@ -70,21 +70,27 @@
     }
 
     /* ───────── Dock: reproductor + perfil ───────── */
+    /* El dock cuelga justo debajo de la escena sin empujarla:
+       así el texto y la imagen central siempre quedan en el centro de la pantalla */
     .dock {
+      --ease: cubic-bezier(.22, 1, .36, 1);
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 28px;
-      margin-top: 32px;
-      width: 100%;
-      max-width: 760px;
+      width: max-content;
+      max-width: 94vw;
+      z-index: 2;
     }
 
     /* Reproductor */
     .player {
-      flex: 1 1 auto;
-      max-width: 240px;
-      min-width: 0;
+      width: 240px;
+      max-width: 80vw;
       padding: 10px 12px 9px;
       border-radius: 14px;
       background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
@@ -241,15 +247,145 @@
     .profile:hover .profile-name { color: #fff; }
     .profile:focus-visible { outline: 2px solid rgba(255,255,255,.6); outline-offset: 6px; border-radius: 12px; }
 
+    /* ───────── Botones laterales ───────── */
+    .side {
+      position: fixed;
+      left: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 5;
+    }
+    .orb {
+      display: grid;
+      place-items: center;
+      width: 36px; height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.38);
+      background: transparent;
+      color: #dcdcdc;
+      cursor: pointer;
+      transition: border-color .3s, color .3s, box-shadow .4s, transform .2s;
+    }
+    .orb:hover { border-color: #fff; color: #fff; box-shadow: 0 0 14px rgba(255,255,255,.16); }
+    .orb:active { transform: scale(.92); }
+    .orb:focus-visible { outline: 2px solid rgba(255,255,255,.6); outline-offset: 3px; }
+    .orb[aria-expanded="true"] {
+      border-color: #fff;
+      color: #fff;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.07), 0 0 18px rgba(255,255,255,.2);
+    }
+    .orb svg { width: 16px; height: 16px; fill: currentColor; }
+    .orb path { fill: currentColor; }   /* anula la regla global path { fill: transparent } */
+
+    /* Nota musical: se mece suavemente */
+    .orb-note svg { transform-origin: 40% 80%; animation: note-sway 2.6s ease-in-out infinite; }
+    @keyframes note-sway {
+      0%, 100% { transform: translateY(0)    rotate(-9deg); }
+      50%      { transform: translateY(-2px) rotate(9deg); }
+    }
+
+    /* Corazón: late */
+    .orb-heart svg { animation: heartbeat 1.5s ease-in-out infinite; }
+    @keyframes heartbeat {
+      0%   { transform: scale(1); }
+      14%  { transform: scale(1.24); }
+      28%  { transform: scale(1); }
+      42%  { transform: scale(1.15); }
+      70%, 100% { transform: scale(1); }
+    }
+
+    /* ───────── Aparición del reproductor y del perfil ─────────
+       .slot se abre/cierra con la clase "open" (la pone el script al pulsar cada botón) */
+    .slot {
+      max-width: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      visibility: hidden;
+      transition: max-width .9s var(--ease), max-height .9s var(--ease),
+                  padding .9s var(--ease), margin .9s var(--ease),
+                  visibility 0s linear .9s;
+    }
+    .slot.open {
+      padding: 20px;      /* margen de aire para que no se recorten sombras ni el foco */
+      margin: -20px;      /* ...y se compensa para que no afecte a la posición */
+      visibility: visible;
+      transition-delay: 0s;
+    }
+    .slot-player.open  { max-width: 320px; }
+    .slot-profile.open { max-width: 180px; }
+    .dock.both .slot-profile { margin-left: 8px; }   /* separación entre reproductor y perfil */
+
+    /* Reproductor: se despliega desde el centro hacia los lados */
+    .player {
+      opacity: 0;
+      clip-path: inset(0 50% round 14px);
+      transform: translateY(12px);
+      transition: opacity .6s ease, clip-path .9s var(--ease), transform .9s var(--ease);
+    }
+    .slot.open .player {
+      opacity: 1;
+      clip-path: inset(0 0 round 14px);
+      transform: none;
+    }
+
+    /* Perfil: la foto se abre como un iris circular y el nombre sube después */
+    .profile-img {
+      opacity: 0;
+      clip-path: circle(0% at 50% 50%);
+      transform: scale(.7);
+      transition: opacity .5s ease, clip-path .9s var(--ease), transform .9s var(--ease), border-color .3s;
+    }
+    .slot.open .profile-img {
+      opacity: 1;
+      clip-path: circle(50% at 50% 50%);
+      transform: scale(1);
+    }
+    .slot.open .profile:hover .profile-img { transform: scale(1.05); border-color: rgba(255,255,255,.5); }
+    .profile-name {
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .5s ease, transform .8s var(--ease), color .2s;
+    }
+    .slot.open .profile-name {
+      opacity: 1;
+      transform: none;
+      transition-delay: .3s, .3s, 0s;
+    }
+
     /* ───────── Móvil ───────── */
     @media (max-width: 640px) {
-      .dock { flex-direction: column; gap: 26px; }
-      .player { width: 100%; }
+      .dock { flex-direction: column; }
+      /* en vertical, se abre hacia abajo en lugar de hacia el lado */
+      .slot { max-width: none; max-height: 0; }
+      .slot-player.open, .slot-profile.open { max-width: none; max-height: 220px; }
+      .dock.both .slot-profile { margin-left: -20px; margin-top: 6px; }
+      .side { left: 8px; gap: 12px; }
+      .orb { width: 32px; height: 32px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .orb svg { animation: none; }
+      .slot, .player, .profile-img, .profile-name { transition-duration: .01s !important; transition-delay: 0s !important; }
     }
   </style>
 </head>
 
 <body>
+
+  <!-- ═════════ BOTONES LATERALES ═════════ -->
+  <nav class="side" aria-label="Opciones">
+    <button class="orb orb-note" id="btn-toggle-player" aria-label="Mostrar reproductor" aria-expanded="false" aria-controls="slot-player">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+    </button>
+    <button class="orb orb-heart" id="btn-toggle-profile" aria-label="Mostrar perfil" aria-expanded="false" aria-controls="slot-profile">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    </button>
+  </nav>
 
   <!-- ═════════ GIF + TEXTO ═════════ -->
   <div class="stage">
@@ -293,11 +429,11 @@
         </textPath>
       </text>
     </svg>
-  </div>
 
-  <!-- ═════════ REPRODUCTOR + PERFIL ═════════ -->
-  <div class="dock">
+  <!-- ═════════ REPRODUCTOR + PERFIL (se muestran con los botones laterales) ═════════ -->
+  <div class="dock" id="dock">
 
+    <div class="slot slot-player" id="slot-player">
     <div class="player" role="group" aria-label="Reproductor de música">
       <div class="track-info">
         <div class="track-title" id="track-title">—</div>
@@ -335,13 +471,17 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- Perfil: cambia la imagen (src), el nombre y el enlace (href) -->
+    <div class="slot slot-profile" id="slot-profile">
     <a class="profile" href="https://example.com" target="_blank" rel="noopener noreferrer">
-      <img class="profile-img" src="perfil.jpg" alt="Foto de perfil">
-      <span class="profile-name">Tu nombre</span>
+      <img class="profile-img" src="fotoicono.png" alt="Foto de perfil">
+      <span class="profile-name">Princesa</span>
     </a>
+    </div>
 
+  </div>
   </div>
 
   <audio id="audio" preload="metadata"></audio>
@@ -372,7 +512,7 @@
 
     // Respeta a quien prefiere menos movimiento: detiene el destello
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.querySelector('.stage svg').pauseAnimations();
+      document.querySelector('.stage > svg').pauseAnimations();
     }
 
 
@@ -385,7 +525,7 @@
        - src:    ruta o URL del .mp3
        ───────────────────────────────────────────── */
     const playlist = [
-      { title: 'Canción 1', artist: 'Artista', src: 'music/cancion1.mp3' },
+      { title: 'LAS NOCHES', artist: 'Junior H', src: 'song1.mp3' },
       { title: 'Canción 2', artist: 'Artista', src: 'music/cancion2.mp3' },
       { title: 'Canción 3', artist: 'Artista', src: 'music/cancion3.mp3' },
     ];
@@ -484,6 +624,25 @@
     paintRange(volume);
     paintRange(seek);
     loadTrack(0);
+
+    /* ═════════════════════════════════════════════
+       3) BOTONES LATERALES: mostrar / ocultar
+       ═════════════════════════════════════════════ */
+    const dock        = document.getElementById('dock');
+    const slotPlayer  = document.getElementById('slot-player');
+    const slotProfile = document.getElementById('slot-profile');
+
+    const bindToggle = (btnId, slot) => {
+      const btn = document.getElementById(btnId);
+      btn.addEventListener('click', () => {
+        const open = slot.classList.toggle('open');
+        btn.setAttribute('aria-expanded', open);
+        dock.classList.toggle('both',
+          slotPlayer.classList.contains('open') && slotProfile.classList.contains('open'));
+      });
+    };
+    bindToggle('btn-toggle-player',  slotPlayer);
+    bindToggle('btn-toggle-profile', slotProfile);
   </script>
 </body>
 </html>
