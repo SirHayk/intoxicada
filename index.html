@@ -632,16 +632,21 @@
     const slotPlayer  = document.getElementById('slot-player');
     const slotProfile = document.getElementById('slot-profile');
 
-    const bindToggle = (btnId, slot) => {
+    const bindToggle = (btnId, slot, onOpen) => {
       const btn = document.getElementById(btnId);
       btn.addEventListener('click', () => {
         const open = slot.classList.toggle('open');
         btn.setAttribute('aria-expanded', open);
         dock.classList.toggle('both',
           slotPlayer.classList.contains('open') && slotProfile.classList.contains('open'));
+        if (open && onOpen) onOpen();
       });
     };
-    bindToggle('btn-toggle-player',  slotPlayer);
+    // Al mostrar el reproductor, la música empieza sola
+    // (funciona porque viene de un clic del usuario; los navegadores bloquean el autoplay sin interacción)
+    bindToggle('btn-toggle-player',  slotPlayer, () => {
+      if (audio.paused) audio.play().catch(() => {});
+    });
     bindToggle('btn-toggle-profile', slotProfile);
   </script>
 </body>
